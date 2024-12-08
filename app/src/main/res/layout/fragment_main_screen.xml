@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/background"
+        android:scaleType="centerCrop"/>
+
+    <ImageView
+        android:id="@+id/circle"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/circle"
+        app:layout_constraintBottom_toBottomOf="@id/guidelineCircleBottom"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="@id/guidelineCircleRight"
+        app:layout_constraintStart_toStartOf="@id/guidelineCircleLeft"
+        app:layout_constraintTop_toTopOf="@id/guidelineCircleTop" />
+
+    <TextView
+        android:id="@+id/tvMainTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="@id/circle"
+        app:layout_constraintEnd_toEndOf="@id/circle"
+        app:layout_constraintTop_toTopOf="@id/guidelineCircleTop"
+        app:layout_constraintBottom_toBottomOf="@id/circle"
+        android:text="EDango App Manager"
+        android:textAlignment="center"
+        android:gravity="center"
+        android:textSize="35sp"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnManageProduct"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
+        android:text="Manage Products"
+        android:textColor="@color/black"
+        app:layout_constraintTop_toBottomOf="@id/tvMainTitle"
+        app:layout_constraintStart_toStartOf="@id/tvMainTitle"
+        app:layout_constraintEnd_toEndOf="@id/tvMainTitle"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnManageOrder"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        android:text="Manage Orders"
+        android:textColor="@color/black"
+        app:layout_constraintTop_toBottomOf="@id/btnManageProduct"
+        app:layout_constraintStart_toStartOf="@id/tvMainTitle"
+        app:layout_constraintEnd_toEndOf="@id/tvMainTitle"/>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineCircleLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.15" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineCircleRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.85" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineCircleTop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="146dp" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineCircleBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.65"/>
+</androidx.constraintlayout.widget.ConstraintLayout>
