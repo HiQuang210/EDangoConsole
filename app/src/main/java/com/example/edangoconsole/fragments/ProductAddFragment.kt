@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -51,6 +52,23 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerCategory.adapter = adapter
+
+        spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val selectedCategory = categories[position]
+                if (selectedCategory == "Accessories" || selectedCategory == "Furniture") {
+                    binding.tvSelectSizes.visibility = View.VISIBLE
+                    binding.chipGroupSizes.visibility = View.VISIBLE
+                } else {
+                    binding.tvSelectSizes.visibility = View.GONE
+                    binding.chipGroupSizes.visibility = View.GONE
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                
+            }
+        }
 
         binding.buttonColorPicker.setOnClickListener {
             ColorPickerDialog.Builder(requireContext())
@@ -109,7 +127,8 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
         val name = binding.edName.text.toString().trim()
         val category = binding.spinnerCategory.selectedItem.toString()
         val price = binding.edPrice.text.toString().trim()
-        val discountPercentage = binding.discountPercentage.text.toString().trim()
+        val discountText = binding.discountPercentage.text.toString().trim()
+        val discountPercentage = if (discountText.isEmpty()) null else discountText.toInt().toFloat() / 100
         val description = binding.edDescription.text.toString().trim()
         val sizes = getSelectedSizes()
         val imagesByteArrays = getImagesByteArrays()
@@ -136,7 +155,7 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                     name,
                     category,
                     price.toFloat(),
-                    if (discountPercentage.isEmpty()) null else discountPercentage.toFloat(),
+                    discountPercentage,
                     description.ifEmpty { null },
                     if (selectedColors.isEmpty()) null else selectedColors,
                     sizes,
@@ -174,7 +193,7 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
     private fun updateImages() {
         binding.tvSelectedImages.text = "Selected Images: ${selectedImages.size}"
         val imagePreviewContainer = binding.imagePreviewContainer
-        imagePreviewContainer.removeAllViews() // Clear previous previews
+        imagePreviewContainer.removeAllViews()
 
         selectedImages.forEach { uri ->
             val imageView = ImageView(requireContext()).apply {
@@ -237,6 +256,11 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
         if (binding.edName.text.toString().trim().isEmpty()) return false
         if (binding.spinnerCategory.selectedItem == null) return false
         if (selectedImages.isEmpty()) return false
+        val discountText = binding.discountPercentage.text.toString().trim()
+        if (discountText.isNotEmpty()) {
+            val discount = discountText.toInt()
+            if (discount !in 1..99) return false
+        }
         return true
     }
 
