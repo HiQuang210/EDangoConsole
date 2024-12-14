@@ -10,24 +10,25 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
 class ProductAdapter(
-    private val productList: List<Product>,
-    private val onSeeDetailClick: (Product) -> Unit
+    private val productList: List<Pair<Product, String>>,
+    private val onSeeDetailClick: (Product, String) -> Unit
 ) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
     inner class ProductViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val imgProduct: ImageView = itemView.findViewById(R.id.img_product)
-        val tvProductName: TextView = itemView.findViewById(R.id.tv_deal_product_name)
-        val tvPrice: TextView = itemView.findViewById(R.id.tv_price)
-        val tvQuantity: TextView = itemView.findViewById(R.id.tv_quantity)
-        val btnSeeDetail: Button = itemView.findViewById(R.id.btn_see_product)
+        private val imgProduct: ImageView = itemView.findViewById(R.id.img_product)
+        private val tvProductName: TextView = itemView.findViewById(R.id.tv_deal_product_name)
+        private val tvPrice: TextView = itemView.findViewById(R.id.tv_price)
+        private val tvDiscount: TextView = itemView.findViewById(R.id.tv_discount)
+        private val btnSeeDetail: Button = itemView.findViewById(R.id.btn_see_product)
 
-        fun bind(product: Product) {
+        fun bind(product: Product, documentId: String) {
             tvProductName.text = product.name
             tvPrice.text = "${product.price.toInt()} VND"
-            tvQuantity.text = "Quantity: ${product.quantity}"
-            Glide.with(itemView.context).load(product.images[0]).into(imgProduct)
+            tvDiscount.text = "Discounted: ${product.discountPercentage ?: "0"}"
+            Glide.with(itemView.context).load(product.images.firstOrNull()).into(imgProduct)
+
             btnSeeDetail.setOnClickListener {
-                onSeeDetailClick(product)
+                onSeeDetailClick(product, documentId)
             }
         }
     }
@@ -38,7 +39,8 @@ class ProductAdapter(
     }
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-        holder.bind(productList[position])
+        val (product, documentId) = productList[position]
+        holder.bind(product, documentId)
     }
 
     override fun getItemCount(): Int = productList.size

@@ -22,7 +22,7 @@ import kotlinx.coroutines.tasks.await
 class ManageProductFragment : Fragment(R.layout.fragment_manage_product) {
     private lateinit var binding: FragmentManageProductBinding
     private val fireStore = Firebase.firestore
-    private val productList = mutableListOf<Product>()
+    private val productList = mutableListOf<Pair<Product, String>>()
     private lateinit var productAdapter: ProductAdapter
     private var lastVisible: DocumentSnapshot? = null
     private var isLoading = false
@@ -32,12 +32,11 @@ class ManageProductFragment : Fragment(R.layout.fragment_manage_product) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentManageProductBinding.bind(view)
 
-        val onSeeDetailClick: (Product) -> Unit = { product ->
+        val onSeeDetailClick: (Product, String) -> Unit = { product, documentId ->
             val action = ManageProductFragmentDirections
-                .actionManageProductFragmentToEditProductFragment(product)
+                .actionManageProductFragmentToEditProductFragment(product, documentId)
             findNavController().navigate(action)
         }
-
 
         productAdapter = ProductAdapter(productList, onSeeDetailClick)
 
@@ -86,20 +85,24 @@ class ManageProductFragment : Fragment(R.layout.fragment_manage_product) {
 
                 if (result.isEmpty) {
                     hasMoreProducts = false
-                    //Toast.makeText(requireContext(), "No more products to load.", Toast.LENGTH_SHORT).show()
                     isLoading = false
                     return@launch
                 }
 
-                val newProducts = result.toObjects(Product::class.java)
+                val newProducts = result.documents.mapNotNull { doc ->
+                    val product = doc.toObject(Product::class.java)
+                    product?.let { Pair(it, doc.id) }
+                }
+
+                // Add new products to the list and notify only the inserted range
+                val startPosition = productList.size
                 productList.addAll(newProducts)
-                productAdapter.notifyDataSetChanged()
+                productAdapter.notifyItemRangeInserted(startPosition, newProducts.size)
 
                 lastVisible = result.documents[result.size() - 1]
 
                 if (newProducts.size < 15) {
                     hasMoreProducts = false
-                    //Toast.makeText(requireContext(), "No more products available.", Toast.LENGTH_SHORT).show()
                 }
 
                 isLoading = false

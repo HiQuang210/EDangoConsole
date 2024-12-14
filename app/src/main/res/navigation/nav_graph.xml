@@ -51,6 +51,9 @@
         <argument
             android:name="product"
             app:argType="com.example.edangoconsole.Product" />
+        <argument
+            android:name="documentId"
+            app:argType="string" />
     </fragment>
 
 </navigation>

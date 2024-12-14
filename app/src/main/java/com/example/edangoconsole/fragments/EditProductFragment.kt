@@ -25,7 +25,6 @@ import com.bumptech.glide.Glide
 import com.example.edangoconsole.Product
 import com.example.edangoconsole.R
 import com.example.edangoconsole.databinding.FragmentEditProductBinding
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -43,6 +42,7 @@ import java.util.UUID
 class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
     private lateinit var binding: FragmentEditProductBinding
     private lateinit var product: Product
+    private lateinit var documentId: String
     private val productsStorage = Firebase.storage.reference
     private val fireStore = Firebase.firestore
     private val selectedImages = mutableListOf<Uri>()
@@ -61,7 +61,6 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentEditProductBinding.bind(view)
-
         binding.buttonColorPicker.setOnClickListener {
             ColorPickerDialog.Builder(requireContext())
                 .setTitle("Product color")
@@ -83,7 +82,7 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
                 val intent = result.data
                 if (intent?.clipData != null) {
                     val count = intent.clipData?.itemCount ?: 0
-                    (0 until count).forEach {
+                    (0 until count).forEach { it ->
                         val imageUri = intent.clipData?.getItemAt(it)?.uri
                         imageUri?.let {
                             selectedImages.add(it)
@@ -110,9 +109,22 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
         binding.returnIconBtn.setOnClickListener {
             findNavController().navigate(R.id.action_editProductFragment_to_manageProductFragment)
         }
+
+        binding.deleteIconBtn.setOnClickListener {
+            val builder = AlertDialog.Builder(requireContext())
+            builder.setTitle("Delete Product")
+                .setMessage("Are you sure you want to delete this product?")
+                .setPositiveButton("Yes") { _, _ ->
+                    deleteProduct()
+                }
+                .setNegativeButton("No", null)
+                .show()
+        }
+
         arguments?.let {
             val args = EditProductFragmentArgs.fromBundle(it)
             product = args.product
+            documentId = args.documentId
         } ?: run {
             throw IllegalStateException("Product argument is missing")
         }
@@ -121,9 +133,7 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
         binding.edDescription.setText(product.description)
         binding.edPrice.setText(product.price.toString())
         binding.discountPercentage.setText((product.discountPercentage?.times(100)?.toInt())?.toString() ?: "")
-        binding.edQuantity.setText(product.quantity.toString())
         fetchProductSizes()
-
         val categories = listOf("Accessories", "Cosmetics", "Entertainment", "Technology", "Furniture")
         val spinnerCategory: Spinner = binding.spinnerCategory
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categories)
@@ -170,7 +180,7 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
     }
 
     private fun fetchProductSizes() {
-        val productRef = fireStore.collection("Products").document(product.id)
+        val productRef = fireStore.collection("Products").document(documentId)
 
         productRef.get().addOnSuccessListener { documentSnapshot ->
             val sizesFromDb = documentSnapshot.get("sizes")?.let {
@@ -274,7 +284,6 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
         }
     }
 
-
     private fun showImageOptionsDialog(imageIndex: Int) {
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Choose an Action")
@@ -309,7 +318,6 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
     private fun validateInformation(): Boolean {
         if (binding.edPrice.text.toString().trim().isEmpty()) return false
         if (binding.edName.text.toString().trim().isEmpty()) return false
-        if (binding.edQuantity.text.toString().trim().isEmpty()) return false
         if (binding.spinnerCategory.selectedItem == null) return false
         if (selectedImages.isEmpty()) return false
         val discountText = binding.discountPercentage.text.toString().trim()
@@ -355,6 +363,19 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
         return imagesByteArray
     }
 
+    private fun deleteProduct() {
+        val productRef = fireStore.collection("Products").document(documentId)
+        productRef.delete()
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Product deleted successfully", Toast.LENGTH_SHORT).show()
+
+                findNavController().navigate(R.id.action_editProductFragment_to_manageProductFragment)
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(requireContext(), "Failed to delete product: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     private fun saveProduct() {
         val name = binding.edName.text.toString().trim()
         val category = binding.spinnerCategory.selectedItem.toString()
@@ -365,7 +386,6 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
         val sizes = getSelectedSizes()
         val imagesByteArrays = getImagesByteArrays()
         val images = mutableListOf<String>()
-        val quantity = binding.edQuantity.text.toString().toInt()
 
         binding.btnSaveProduct.startAnimation()
 
@@ -393,11 +413,10 @@ class EditProductFragment : Fragment(R.layout.fragment_edit_product) {
                     if (selectedColors.isEmpty()) null else selectedColors,
                     sizes,
                     images.ifEmpty { product.images },
-                    quantity,
                     uploadedAt = product.uploadedAt
                 )
 
-                fireStore.collection("Products").document(product.id).set(updatedProduct).await()
+                fireStore.collection("Products").document(documentId).set(updatedProduct).await()
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(requireContext(), "Product updated successfully", Toast.LENGTH_SHORT).show()

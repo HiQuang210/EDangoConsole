@@ -43,7 +43,7 @@
             android:textSize="12sp" />
 
         <TextView
-            android:id="@+id/tv_quantity"
+            android:id="@+id/tv_discount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="50.000"
