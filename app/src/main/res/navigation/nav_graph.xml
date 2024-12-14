@@ -11,14 +11,46 @@
         android:label="MainScreenFragment"
         tools:layout="@layout/fragment_main_screen">
         <action
-            android:id="@+id/action_mainScreenFragment_to_productAddFragment"
-            app:destination="@id/productAddFragment" />
+            android:id="@+id/action_mainScreenFragment_to_manageProductFragment"
+            app:destination="@id/manageProductFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/productAddFragment"
         android:name="com.example.edangoconsole.fragments.ProductAddFragment"
         android:label="ProductAddFragment"
-        tools:layout="@layout/fragment_add_product"/>
+        tools:layout="@layout/fragment_add_product">
+        <action
+            android:id="@+id/action_productAddFragment_to_manageProductFragment"
+            app:destination="@id/manageProductFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/manageProductFragment"
+        android:name="com.example.edangoconsole.fragments.ManageProductFragment"
+        android:label="ManageProductFragment"
+        tools:layout="@layout/fragment_manage_product">
+        <action
+            android:id="@+id/action_manageProductFragment_to_productAddFragment"
+            app:destination="@id/productAddFragment" />
+        <action
+            android:id="@+id/action_manageProductFragment_to_mainScreenFragment"
+            app:destination="@id/mainScreenFragment" />
+        <action
+            android:id="@+id/action_manageProductFragment_to_editProductFragment"
+            app:destination="@id/editProductFragment"
+            app:argType="com.example.edangoconsole.Product"/>
+    </fragment>
+    <fragment
+        android:id="@+id/editProductFragment"
+        android:name="com.example.edangoconsole.fragments.EditProductFragment"
+        android:label="EditProductFragment"
+        tools:layout="@layout/fragment_edit_product">
+        <action
+            android:id="@+id/action_editProductFragment_to_manageProductFragment"
+            app:destination="@id/manageProductFragment" />
+        <argument
+            android:name="product"
+            app:argType="com.example.edangoconsole.Product" />
+    </fragment>
 
 </navigation>

@@ -1,6 +1,7 @@
 package com.example.edangoconsole.fragments
 
 import android.app.Activity.RESULT_OK
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.Intent.ACTION_GET_CONTENT
 import android.graphics.Bitmap
@@ -16,12 +17,15 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.example.edangoconsole.Product
 import com.example.edangoconsole.R
 import com.example.edangoconsole.databinding.FragmentAddProductBinding
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -38,14 +42,20 @@ import java.util.UUID
 
 class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
     private lateinit var binding: FragmentAddProductBinding
+    private lateinit var editImageActivityResultLauncher: ActivityResultLauncher<Intent>
     private var selectedImages = mutableListOf<Uri>()
     private val selectedColors = mutableListOf<Int>()
     private val productsStorage = Firebase.storage.reference
     private val fireStore = Firebase.firestore
+    private var currentImageIndexToEdit: Int? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentAddProductBinding.bind(view)
+
+        binding.returnIconBtn.setOnClickListener {
+            findNavController().navigate(R.id.action_productAddFragment_to_manageProductFragment)
+        }
 
         val categories = listOf("Accessories", "Cosmetics", "Entertainment", "Technology", "Furniture")
         val spinnerCategory: Spinner = binding.spinnerCategory
@@ -62,12 +72,15 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                 } else {
                     binding.tvSelectSizes.visibility = View.GONE
                     binding.chipGroupSizes.visibility = View.GONE
+                    val chipGroup = binding.chipGroupSizes
+                    for (i in 0 until chipGroup.childCount) {
+                        val chip = chipGroup.getChildAt(i) as? com.google.android.material.chip.Chip
+                        chip?.isChecked = false
+                    }
                 }
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>) {
-                
-            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
         binding.buttonColorPicker.setOnClickListener {
@@ -121,6 +134,15 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                 Toast.makeText(requireContext(), "Check your inputs", Toast.LENGTH_SHORT).show()
             }
         }
+
+        editImageActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val newImageUri = result.data?.data
+                if (newImageUri != null) {
+                    handleEditedImage(newImageUri)
+                }
+            }
+        }
     }
 
     private fun saveProduct() {
@@ -159,7 +181,8 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                     description.ifEmpty { null },
                     if (selectedColors.isEmpty()) null else selectedColors,
                     sizes,
-                    images
+                    images,
+                    uploadedAt = Timestamp.now()
                 )
 
                 fireStore.collection("Products").add(product).await()
@@ -195,7 +218,7 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
         val imagePreviewContainer = binding.imagePreviewContainer
         imagePreviewContainer.removeAllViews()
 
-        selectedImages.forEach { uri ->
+        selectedImages.forEachIndexed { index, uri ->
             val imageView = ImageView(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     resources.getDimensionPixelSize(R.dimen.image_preview_size),
@@ -205,8 +228,46 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                 }
                 setImageURI(uri)
                 scaleType = ImageView.ScaleType.CENTER_CROP
+
+                setOnClickListener {
+                    showImageOptionsDialog(index)
+                }
             }
             imagePreviewContainer.addView(imageView)
+        }
+    }
+
+    private fun showImageOptionsDialog(imageIndex: Int) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Choose an Action")
+        builder.setItems(arrayOf("Edit Image", "Delete Image")) { dialog, which ->
+            when (which) {
+                0 -> editImage(imageIndex)
+                1 -> {
+                    selectedImages.removeAt(imageIndex)
+                    updateImages()
+                    Toast.makeText(requireContext(), "Image deleted", Toast.LENGTH_SHORT).show()
+                }
+            }
+            dialog.dismiss()
+        }
+        builder.create().show()
+    }
+
+    private fun editImage(imageIndex: Int) {
+        val intent = Intent(ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
+        currentImageIndexToEdit = imageIndex
+        editImageActivityResultLauncher.launch(intent)
+    }
+
+    private fun handleEditedImage(newImageUri: Uri) {
+        currentImageIndexToEdit?.let { index ->
+            selectedImages[index] = newImageUri
+            updateImages()
+            Toast.makeText(requireContext(), "Image updated successfully", Toast.LENGTH_SHORT).show()
+            currentImageIndexToEdit = null
         }
     }
 
@@ -214,7 +275,7 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
         val colorBlocksContainer = binding.colorBlocksContainer
         colorBlocksContainer.removeAllViews()
 
-        selectedColors.forEach { color ->
+        selectedColors.forEachIndexed { index, color ->
             val colorBlock = View(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     resources.getDimensionPixelSize(R.dimen.color_block_size),
@@ -223,9 +284,46 @@ class ProductAddFragment : Fragment(R.layout.fragment_add_product) {
                     setMargins(10, 0, 10, 0)
                 }
                 setBackgroundColor(color)
+                setOnClickListener {
+                    showColorOptionsDialog(index)
+                }
             }
             colorBlocksContainer.addView(colorBlock)
         }
+    }
+
+    private fun showColorOptionsDialog(colorIndex: Int) {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Choose an Action")
+        builder.setItems(arrayOf("Edit Color", "Delete Color")) { dialog, which ->
+            when (which) {
+                0 -> showColorEditDialog(colorIndex)
+                1 -> {
+                    selectedColors.removeAt(colorIndex)
+                    updateColors()
+                    Toast.makeText(requireContext(), "Color deleted", Toast.LENGTH_SHORT).show()
+                }
+            }
+            dialog.dismiss()
+        }
+        builder.create().show()
+    }
+
+    private fun showColorEditDialog(colorIndex: Int) {
+        ColorPickerDialog.Builder(requireContext())
+            .setTitle("Edit Color")
+            .setPositiveButton("Select", object : ColorEnvelopeListener {
+                override fun onColorSelected(envelope: ColorEnvelope?, fromUser: Boolean) {
+                    envelope?.let {
+                        selectedColors[colorIndex] = it.color
+                        updateColors()
+                    }
+                }
+            })
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun getImagesByteArrays(): List<ByteArray> {

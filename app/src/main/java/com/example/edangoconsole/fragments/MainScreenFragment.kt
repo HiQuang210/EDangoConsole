@@ -15,7 +15,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main_screen) {
         binding = FragmentMainScreenBinding.bind(view)
 
         binding.btnManageProduct.setOnClickListener {
-            findNavController().navigate(R.id.action_mainScreenFragment_to_productAddFragment)
+            findNavController().navigate(R.id.action_mainScreenFragment_to_manageProductFragment)
         }
     }
 }

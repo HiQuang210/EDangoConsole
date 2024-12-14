@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -57,4 +58,7 @@ dependencies {
 
     // Loading button
     implementation("com.github.leandroborgesferreira:loading-button-android:2.3.0")
+
+    //Glide
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
